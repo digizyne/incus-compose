@@ -1,0 +1,8 @@
+services:
+  nginx:
+    image: docker:nginx:latest
+    proxies:
+    - connect: tcp:0.0.0.0:80
+      listen: tcp:127.0.0.1:8080
+    - connect: tcp:0.0.0.0:443
+      listen: tcp:127.0.0.1:443
