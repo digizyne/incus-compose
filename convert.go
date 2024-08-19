@@ -18,7 +18,32 @@ func convertPortsToProxies(ports []string) []IncusProxy {
 			proxies = append(proxies, proxy)
 		}
 	return proxies
+}
+
+func convertTopLevelVolumes(volumes map[string]DockerVolume) map[string]IncusVolume {
+	incusVolumes := make(map[string]IncusVolume)
+	for key := range volumes {
+		incusVolumes[key] = IncusVolume{
+			External: volumes[key].External,
 		}
+	}
+	return incusVolumes
+}
+
+func convertServiceVolume(volume string, topLevelVolumes map[string]DockerVolume) IncusServiceVolume {
+	volumePairs := strings.Split(volume, ":")
+
+	mountType := "bind"
+	if _, ok := topLevelVolumes[volumePairs[0]]; ok {
+		mountType = "volume"
+	}
+
+	return IncusServiceVolume{
+		Type: mountType,
+		Source: volumePairs[0],
+		Target: volumePairs[1],
+	}
+}
 
 func convertDockerComposeToIncusCompose(inputFile string) {
 	data, err := os.ReadFile(inputFile)
@@ -41,12 +66,23 @@ func convertDockerComposeToIncusCompose(inputFile string) {
 
 		proxies := convertPortsToProxies(dockerCompose.Services[key].Ports)
 
+		serviceVolumes := []IncusServiceVolume{}
+		for _, volume := range dockerCompose.Services[key].Volumes {
+			serviceVolumes = append(serviceVolumes, convertServiceVolume(volume, dockerCompose.Volumes))
+		}
+
 		incusComposeService := IncusComposeService{
 			Image: fmt.Sprintf("docker:%s", dockerCompose.Services[key].Image),
-			Proxies: proxies,
+			Devices: IncusDevices{
+				Proxies: proxies,
+			},
+			Volumes: serviceVolumes,
 		}
+
 		incusCompose.Services[key] = incusComposeService
 	}
+
+	incusCompose.Volumes = convertTopLevelVolumes(dockerCompose.Volumes)
 
 	incusComposeYaml, err := yaml.Marshal(incusCompose)
 	if err != nil {

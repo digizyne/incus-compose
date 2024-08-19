@@ -1,8 +1,19 @@
 services:
   nginx:
+    devices:
+      proxies:
+      - connect: tcp:0.0.0.0:80
+        listen: tcp:127.0.0.1:8080
+      - connect: tcp:0.0.0.0:443
+        listen: tcp:127.0.0.1:443
     image: docker:nginx:latest
-    proxies:
-    - connect: tcp:0.0.0.0:80
-      listen: tcp:127.0.0.1:8080
-    - connect: tcp:0.0.0.0:443
-      listen: tcp:127.0.0.1:443
+    volumes:
+    - source: ./nginx.conf
+      target: /etc/nginx/nginx.conf
+      type: bind
+    - source: custom_vol
+      target: /var/www/html
+      type: volume
+volumes:
+  custom_vol:
+    external: false

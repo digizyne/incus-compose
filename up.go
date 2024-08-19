@@ -34,6 +34,17 @@ func createProxy(incusProxy IncusProxy, serviceName string) {
 	fmt.Println(string(proxyOutput))
 }
 
+func createVolume(incusVolume IncusVolume, volumeName string) {
+	fmt.Println("*** creating volume", volumeName, "***")
+	volumeCommand := exec.Command("incus", "storage", "volume", "create", "default", volumeName)
+	volumeOutput, err := volumeCommand.CombinedOutput()
+	if (err != nil) {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(volumeOutput))
+}
+
 func startService(serviceName string) {
 	fmt.Println("*** starting service", serviceName, "***")
 	launchCommand := exec.Command("incus", "start", serviceName)
@@ -60,11 +71,17 @@ func up() {
 		return
 	}
 
+	for key := range incusCompose.Volumes {
+		if (!incusCompose.Volumes[key].External) {
+			createVolume(incusCompose.Volumes[key], key)
+		}
+	}
+
 	for key := range incusCompose.Services {
 		createService(incusCompose.Services[key])
 
 		fmt.Println("*** configuring service ***")
-		for _, proxy := range incusCompose.Services[key].Proxies {
+		for _, proxy := range incusCompose.Services[key].Devices.Proxies {
 			createProxy(proxy, key)
 		}
 
