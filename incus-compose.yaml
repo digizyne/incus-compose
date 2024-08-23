@@ -1,12 +1,10 @@
 services:
   nginx:
-    container_name: nginx
+    container_name: cringenx
     devices:
       proxies:
       - connect: tcp:0.0.0.0:80
         listen: tcp:127.0.0.1:8080
-      - connect: tcp:0.0.0.0:443
-        listen: tcp:127.0.0.1:443
     environment:
     - one=1
     - two=2
@@ -16,12 +14,6 @@ services:
       source: custom_vol
       target: /var/www/html
       type: volume
-    - read_only: true
-      source: second_volume
-      target: /etc/nginx
-      type: volume
 volumes:
   custom_vol:
-    external: false
-  second_volume:
     external: false
