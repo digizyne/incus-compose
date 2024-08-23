@@ -15,8 +15,10 @@ type Volume interface {}
 
 type DockerComposeService struct {
 	Image string `json:"image"`
+	Container_Name string `json:"container_name,omitempty"`
 	Ports []string `json:"ports"`
 	Volumes []Volume `json:"volumes"`
+	Environment []string `json:"environment"`
 }
 
 type DockerCompose struct {

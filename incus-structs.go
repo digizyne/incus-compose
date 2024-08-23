@@ -24,8 +24,10 @@ type IncusVolume struct {
 
 type IncusComposeService struct {
 	Image string `json:"image"`
+	Container_Name string `json:"container_name,omitempty"`
 	Devices IncusDevices `json:"devices"`
 	Volumes []IncusServiceVolume `json:"volumes"`
+	Environment []string `json:"environment,omitempty"`
 }
 
 type IncusCompose struct {

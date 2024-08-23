@@ -1,11 +1,15 @@
 services:
   nginx:
+    container_name: nginx
     devices:
       proxies:
       - connect: tcp:0.0.0.0:80
         listen: tcp:127.0.0.1:8080
       - connect: tcp:0.0.0.0:443
         listen: tcp:127.0.0.1:443
+    environment:
+    - one=1
+    - two=2
     image: docker:nginx:latest
     volumes:
     - read_only: false

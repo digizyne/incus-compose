@@ -55,12 +55,7 @@ func convertServiceVolumeShorthand(volume string, topLevelVolumes map[string]Doc
 func convertServiceVolumeLongform(volume DockerServiceVolume, topLevelVolumes map[string]DockerVolume) (IncusServiceVolume, error) {
 	if _, ok := topLevelVolumes[volume.Source]; ok {
 		if (volume.Type == "volume") {
-			incusCompose := IncusServiceVolume{
-				Type: volume.Type,
-				Source: volume.Source,
-				Target: volume.Target,
-				Read_Only: volume.Read_Only,
-			}
+			incusCompose := IncusServiceVolume(volume)
 			return incusCompose, nil
 		}
 	}
@@ -98,22 +93,17 @@ func convertDockerComposeToIncusCompose(inputFile string) {
 				}
 				serviceVolumes = append(serviceVolumes, newVolume)
 			} else {
-				fmt.Println(reflect.TypeOf(volume))
-				fmt.Println(volume)
 				var coercedVolume DockerServiceVolume
 				err := mapstructure.Decode(volume, &coercedVolume)
 				if (err != nil) {
-					fmt.Println(err)
 					continue
 				}
 				newVolume, err := convertServiceVolumeLongform(coercedVolume, dockerCompose.Volumes)
 				if (err != nil) {
-					fmt.Println(err)
 					continue
 				}
 				serviceVolumes = append(serviceVolumes, newVolume)
 			}
-
 		}
 
 		incusComposeService := IncusComposeService{
@@ -122,6 +112,14 @@ func convertDockerComposeToIncusCompose(inputFile string) {
 				Proxies: proxies,
 			},
 			Volumes: serviceVolumes,
+		}
+
+		if (dockerCompose.Services[key].Container_Name != "") {
+			incusComposeService.Container_Name = dockerCompose.Services[key].Container_Name
+		}
+
+		if (len(dockerCompose.Services[key].Environment) > 0) {
+			incusComposeService.Environment = dockerCompose.Services[key].Environment
 		}
 
 		incusCompose.Services[key] = incusComposeService

@@ -1,6 +1,10 @@
 services:
   nginx:
     image: nginx:latest
+    container_name: nginx
+    environment:
+      - one=1
+      - two=2
     ports:
       - "8080:80"
       - "443:443"
