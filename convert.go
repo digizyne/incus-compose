@@ -1,9 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 	"sigs.k8s.io/yaml"
 )
 
@@ -30,19 +34,38 @@ func convertTopLevelVolumes(volumes map[string]DockerVolume) map[string]IncusVol
 	return incusVolumes
 }
 
-func convertServiceVolume(volume string, topLevelVolumes map[string]DockerVolume) IncusServiceVolume {
+func convertServiceVolumeShorthand(volume string, topLevelVolumes map[string]DockerVolume) (IncusServiceVolume, error) {
 	volumePairs := strings.Split(volume, ":")
-
-	mountType := "bind"
 	if _, ok := topLevelVolumes[volumePairs[0]]; ok {
-		mountType = "volume"
+		incuseSrviceVolume := IncusServiceVolume{
+			Type: "volume",
+			Source: volumePairs[0],
+			Target: volumePairs[1],
+		}
+		if (len(volumePairs) == 3) {
+			incuseSrviceVolume.Read_Only = strings.Contains(volumePairs[2], "ro")
+		}
+
+		return incuseSrviceVolume, nil
 	}
 
-	return IncusServiceVolume{
-		Type: mountType,
-		Source: volumePairs[0],
-		Target: volumePairs[1],
+	return IncusServiceVolume{}, errors.New("bind mounts are not yet supported in incus-compose")
+}
+
+func convertServiceVolumeLongform(volume DockerServiceVolume, topLevelVolumes map[string]DockerVolume) (IncusServiceVolume, error) {
+	if _, ok := topLevelVolumes[volume.Source]; ok {
+		if (volume.Type == "volume") {
+			incusCompose := IncusServiceVolume{
+				Type: volume.Type,
+				Source: volume.Source,
+				Target: volume.Target,
+				Read_Only: volume.Read_Only,
+			}
+			return incusCompose, nil
+		}
 	}
+
+	return IncusServiceVolume{}, errors.New("bind mounts are not yet supported in incus-compose")
 }
 
 func convertDockerComposeToIncusCompose(inputFile string) {
@@ -68,7 +91,29 @@ func convertDockerComposeToIncusCompose(inputFile string) {
 
 		serviceVolumes := []IncusServiceVolume{}
 		for _, volume := range dockerCompose.Services[key].Volumes {
-			serviceVolumes = append(serviceVolumes, convertServiceVolume(volume, dockerCompose.Volumes))
+			if (reflect.TypeOf(volume).Kind() == reflect.String) {
+				newVolume, err := convertServiceVolumeShorthand(volume.(string), dockerCompose.Volumes)
+				if (err != nil) {
+					continue
+				}
+				serviceVolumes = append(serviceVolumes, newVolume)
+			} else {
+				fmt.Println(reflect.TypeOf(volume))
+				fmt.Println(volume)
+				var coercedVolume DockerServiceVolume
+				err := mapstructure.Decode(volume, &coercedVolume)
+				if (err != nil) {
+					fmt.Println(err)
+					continue
+				}
+				newVolume, err := convertServiceVolumeLongform(coercedVolume, dockerCompose.Volumes)
+				if (err != nil) {
+					fmt.Println(err)
+					continue
+				}
+				serviceVolumes = append(serviceVolumes, newVolume)
+			}
+
 		}
 
 		incusComposeService := IncusComposeService{

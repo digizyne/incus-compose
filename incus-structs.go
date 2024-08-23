@@ -13,6 +13,7 @@ type IncusServiceVolume struct {
 	Type string `json:"type"`
 	Source string `json:"source"`
 	Target string `json:"target"`
+	Read_Only bool `json:"read_only"`
 }
 
 type IncusVolume struct {

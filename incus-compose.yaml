@@ -8,12 +8,16 @@ services:
         listen: tcp:127.0.0.1:443
     image: docker:nginx:latest
     volumes:
-    - source: ./nginx.conf
-      target: /etc/nginx/nginx.conf
-      type: bind
-    - source: custom_vol
+    - read_only: false
+      source: custom_vol
       target: /var/www/html
+      type: volume
+    - read_only: true
+      source: second_volume
+      target: /etc/nginx
       type: volume
 volumes:
   custom_vol:
+    external: false
+  second_volume:
     external: false

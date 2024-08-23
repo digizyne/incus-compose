@@ -1,26 +1,22 @@
 package main
 
-type DockerServiceVolumeLongform struct {
+type DockerServiceVolume struct {
 	Type string `json:"type"`
 	Source string `json:"source"`
 	Target string `json:"target"`
-}
-
-type DockerServiceVolume struct {
-	// Longforms []DockerServiceVolumeLongform `json:"longforms"`
-	// Shortforms []string `json:"shorthands"`
+	Read_Only bool `json:"read_only"`
 }
 
 type DockerVolume struct {
 	External bool `json:"external"`
 }
 
-
+type Volume interface {}
 
 type DockerComposeService struct {
 	Image string `json:"image"`
 	Ports []string `json:"ports"`
-	Volumes []string `json:"volumes"`
+	Volumes []Volume `json:"volumes"`
 }
 
 type DockerCompose struct {
