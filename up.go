@@ -33,6 +33,16 @@ func createService(incusComposeService IncusComposeService, serviceName string) 
 	fmt.Println(Green, string(createOutput))
 }
 
+func setEnvVar(envVar string, serviceName string) {
+	cmd := exec.Command("incus", "config", "set", serviceName, fmt.Sprintf("environment.%s", envVar))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(Red, err)
+		return
+	}
+	fmt.Println(Green, string(output))
+}
+
 func createProxy(incusProxy IncusProxy, serviceName string) {
 	proxyPortString := strings.Split(incusProxy.Connect, ":")
 	proxyPort := proxyPortString[len(proxyPortString)-1]
@@ -113,6 +123,12 @@ func up() {
 		createService(incusCompose.Services[key], serviceName)
 
 		fmt.Println(Blue, "*** configuring service", key, "***")
+
+		fmt.Println(Blue, "*** setting env vars for", key, "***")
+		for _, envVar := range incusCompose.Services[key].Environment {
+			setEnvVar(envVar, serviceName)
+		}
+
 		for _, proxy := range incusCompose.Services[key].Devices.Proxies {
 			createProxy(proxy, serviceName)
 		}
